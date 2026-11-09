@@ -9,10 +9,8 @@ const $ = (selector) => document.querySelector(selector);
 const listingsNode = $('#listings');
 let listings = [];
 let activeListing = null;
-let authMode = 'signin';
 let toastTimer;
 
-const escapeText = (value) => String(value ?? '');
 function notify(message) {
   const node = $('#toast');
   node.textContent = message;
@@ -23,6 +21,10 @@ function notify(message) {
 function showNotice(message) {
   $('#notice').textContent = message;
   $('#notice').classList.remove('hidden');
+}
+function getPublicUserName(user) {
+  const meta = user?.user_metadata || {};
+  return meta.username || meta.global_name || meta.full_name || meta.name || 'Discord trader';
 }
 function normalizeItems(input) {
   return input.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
@@ -90,7 +92,7 @@ function renderListings() {
     seller.className = 'seller-info';
     const avatar = document.createElement('span');
     avatar.className = 'seller-avatar';
-    avatar.textContent = escapeText(listing.game_username).slice(0, 1).toUpperCase() || 'B';
+    avatar.textContent = String(listing.game_username || 'B').slice(0, 1).toUpperCase();
     const sellerText = document.createElement('div');
     const name = document.createElement('strong');
     name.textContent = listing.game_username;
@@ -119,7 +121,7 @@ function renderListings() {
 async function loadListings() {
   if (!configured) {
     $('#listing-count').textContent = 'Supabase setup needed';
-    showNotice('The website is ready, but it is not connected to a Supabase project yet. Add your project URL and publishable key in config.js, then run the SQL in supabase/schema.sql.');
+    showNotice('Add your Supabase project URL and publishable key in config.js.');
     $('#empty-state').classList.remove('hidden');
     return;
   }
@@ -134,56 +136,48 @@ async function loadListings() {
 async function updateAuth() {
   if (!configured) return;
   const { data: { user } } = await supabase.auth.getUser();
-  $('#account-label').textContent = user ? (user.user_metadata?.display_name || user.email) : 'Not signed in';
+  $('#account-label').textContent = user ? getPublicUserName(user) : 'Not signed in';
   $('#auth-open').classList.toggle('hidden', Boolean(user));
+  $('#main-signup').classList.toggle('hidden', Boolean(user));
   $('#sign-out').classList.toggle('hidden', !user);
-  const inboxButton = $('#inbox-open');
+  let inboxButton = $('#inbox-open');
   if (user && !inboxButton) {
-    const button = document.createElement('button');
-    button.id = 'inbox-open';
-    button.className = 'button button-quiet';
-    button.textContent = 'Inbox';
-    button.addEventListener('click', openInbox);
-    $('#account-label').after(button);
+    inboxButton = document.createElement('button');
+    inboxButton.id = 'inbox-open';
+    inboxButton.className = 'button button-quiet';
+    inboxButton.textContent = 'Inbox';
+    inboxButton.addEventListener('click', openInbox);
+    $('#account-label').after(inboxButton);
   } else if (!user && inboxButton) inboxButton.remove();
 }
-function openAuth() {
-  authMode = 'signin';
-  $('#auth-heading').textContent = 'Sign in';
-  $('#auth-submit').textContent = 'Sign in';
-  $('#display-name-wrap').classList.add('hidden');
-  $('#auth-switch').textContent = 'Need an account? Sign up';
+function openDiscordAuth() {
   $('#auth-error').textContent = '';
+  if (!configured) {
+    $('#auth-error').textContent = 'Supabase configuration is missing.';
+    $('#auth-dialog').showModal();
+    return;
+  }
   $('#auth-dialog').showModal();
 }
-$('#auth-open').addEventListener('click', openAuth);
-$('#auth-switch').addEventListener('click', () => {
-  authMode = authMode === 'signin' ? 'signup' : 'signin';
-  $('#auth-heading').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
-  $('#auth-submit').textContent = authMode === 'signin' ? 'Sign in' : 'Sign up';
-  $('#display-name-wrap').classList.toggle('hidden', authMode === 'signin');
-  $('#auth-switch').textContent = authMode === 'signin' ? 'Need an account? Sign up' : 'Already registered? Sign in';
-  $('#auth-error').textContent = '';
-});
-$('#auth-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (!configured) return;
-  const email = $('#auth-email').value.trim();
-  const password = $('#auth-password').value;
-  const button = $('#auth-submit');
+async function signInWithDiscord() {
+  const button = $('#discord-signin');
   button.disabled = true;
   $('#auth-error').textContent = '';
-  let result;
-  if (authMode === 'signup') {
-    result = await supabase.auth.signUp({ email, password, options: { data: { display_name: $('#display-name').value.trim().slice(0, 30) } } });
-  } else result = await supabase.auth.signInWithPassword({ email, password });
-  button.disabled = false;
-  if (result.error) { $('#auth-error').textContent = result.error.message; return; }
-  $('#auth-dialog').close();
-  if (authMode === 'signup' && !result.data.session) notify('Check your email to confirm your account.');
-  else notify(authMode === 'signup' ? 'Account created.' : 'Signed in.');
-  await updateAuth();
-});
+  try {
+    const redirectTo = new URL(window.location.pathname, window.location.origin).toString();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: { redirectTo }
+    });
+    if (error) throw error;
+  } catch (error) {
+    $('#auth-error').textContent = error.message || 'Could not start Discord sign-in.';
+    button.disabled = false;
+  }
+}
+$('#auth-open').addEventListener('click', openDiscordAuth);
+$('#main-signup').addEventListener('click', openDiscordAuth);
+$('#discord-signin').addEventListener('click', signInWithDiscord);
 $('#sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
   if (error) notify(error.message);
@@ -192,15 +186,16 @@ $('#sign-out').addEventListener('click', async () => {
 $('#post-open').addEventListener('click', async () => {
   if (!configured) { showNotice('Add your Supabase URL and publishable key in config.js first.'); return; }
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) { openAuth(); notify('Sign in to post a trade.'); return; }
+  if (!user) { notify('Continue with Discord to post a trade.'); openDiscordAuth(); return; }
   $('#listing-error').textContent = '';
   $('#listing-form').reset();
+  $('#game-username').value = getPublicUserName(user);
   $('#listing-dialog').showModal();
 });
 $('#listing-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) { $('#listing-error').textContent = 'Please sign in first.'; return; }
+  if (!user) { $('#listing-error').textContent = 'Sign in with Discord first.'; return; }
   const offers = normalizeItems($('#offer-input').value);
   const wants = normalizeItems($('#want-input').value);
   if (!offers.length || !wants.length) { $('#listing-error').textContent = 'Add at least one Blook to both fields.'; return; }
@@ -214,7 +209,7 @@ $('#listing-form').addEventListener('submit', async (event) => {
   await loadListings();
 });
 function beginMessage(listing) {
-  if (!configured) { showNotice('Supabase is not configured yet. Messages will work after setup.'); return; }
+  if (!configured) { showNotice('Supabase is not configured yet.'); return; }
   activeListing = listing;
   $('#message-heading').textContent = `Message ${listing.game_username}`;
   $('#message-error').textContent = '';
@@ -224,7 +219,7 @@ function beginMessage(listing) {
 $('#message-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) { $('#message-error').textContent = 'Sign in to message this trader.'; return; }
+  if (!user) { $('#message-error').textContent = 'Sign in with Discord to message this trader.'; return; }
   if (user.id === activeListing.owner_id) { $('#message-error').textContent = 'You cannot message yourself about your own listing.'; return; }
   const button = event.submitter;
   button.disabled = true;
@@ -236,7 +231,7 @@ $('#message-form').addEventListener('submit', async (event) => {
 });
 async function openInbox() {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return openAuth();
+  if (!user) return openDiscordAuth();
   const container = $('#inbox-content');
   container.textContent = 'Loading messages…';
   $('#inbox-dialog').showModal();
@@ -261,7 +256,11 @@ $('#search').addEventListener('input', renderListings);
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => button.closest('dialog').close()));
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
 if (configured) {
-  supabase.auth.onAuthStateChange(() => { updateAuth(); });
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+      setTimeout(() => { updateAuth(); loadListings(); }, 0);
+    }
+  });
   updateAuth();
 }
 loadListings();

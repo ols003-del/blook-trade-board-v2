@@ -1,43 +1,30 @@
 # Blook Trade Board
 
-A small static marketplace UI with Supabase Auth, Postgres listings, and private messages. The frontend is designed for GitHub Pages; Supabase hosts the backend data.
+Static Blook trade marketplace with Discord OAuth through Supabase. The site does not ask users to enter email addresses or Discord passwords. Discord handles authentication; Supabase stores listings and private messages.
 
 ## Supabase setup
 
-1. Create a Supabase project.
-2. In the Supabase dashboard, open **SQL Editor**, paste and run [`supabase/schema.sql`](supabase/schema.sql).
-3. Open **Project Settings → API** and copy the Project URL and the **publishable key** (older projects may call it the `anon` key).
-4. Add those values to `config.js`:
+1. Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL Editor.
+2. Add the Supabase Project URL and publishable/anon key to `config.js`. These are browser-safe public values. Never expose a Supabase secret/service-role key.
+3. In Supabase, go to **Authentication → Providers** and enable **Discord**. Copy the callback URL shown by Supabase (usually `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`).
+4. Create a Discord application in the Discord Developer Portal. Under **OAuth2**, add the Supabase callback URL as a redirect URI. Create/copy the Discord Client ID and Client Secret.
+5. In Supabase's Discord provider settings, paste the Discord Client ID and Client Secret and save. Keep the client secret in Supabase only; never put it in this repository.
+6. In Supabase **Authentication → URL Configuration**, set the Site URL to `https://ols003-del.github.io/blook-trade-board-v2/` and add that exact URL under allowed redirect URLs. Also add your localhost URL if testing locally.
+7. In GitHub, enable Pages from `main` and the repository root. Once deployed, reload the Pages site and use **Continue with Discord**.
 
-   ```js
-   window.SUPABASE_URL = "https://your-project.supabase.co";
-   window.SUPABASE_ANON_KEY = "your-publishable-or-anon-key";
-   ```
-
-   These browser values are public. Never put a `service_role` or secret key in frontend code or GitHub.
-
-5. In **Authentication → URL Configuration**, set the Site URL to your GitHub Pages URL, for example `https://YOUR-USERNAME.github.io/blook-trade-board-v2/`, and add it to the allowed redirect URLs.
-
-## Run and publish
-
-- For local testing, use a local static server rather than opening `index.html` directly (ES modules require HTTP). For example: `python -m http.server 8000`, then open `http://localhost:8000`.
-- To publish, open repository **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/ (root)`. The page will be served from GitHub Pages.
+Discord OAuth lets people use their Discord account without entering an email or password into this site. Discord may provide account profile fields to Supabase depending on requested scopes; the app displays a public Discord name and never displays an email. Existing accounts created using the old synthetic-username login cannot be converted automatically; they may need to create a Discord-auth account.
 
 ## Listings and images
 
-Sign up/sign in, then create a listing. Put one item on each line using:
+Sign in with Discord, then create a listing. Put one item on each line using `Blook name | quantity | image URL`. For example:
 
 ```text
-Blook name | quantity | image URL
 Clark | 2 | https://your-host/content/blooks/Clark.png
 Mary Kline | 1 | https://your-host/content/blooks/Mary%20Kline.png
 ```
 
-The image URL may be omitted; the listing will show a placeholder. The Blook HTML paths you shared (such as `/content/blooks/Clark.png`) are relative to the original site, not this GitHub Pages site. To show them here, host/copy image files somewhere you control and use their full HTTPS URL. This project does not scrape Blacket or access anyone's account.
+The image URL may be omitted. Images must be hosted at URLs available to the browser; paths from Blacket are not automatically hosted by this project.
 
-## Security notes
+## Local testing
 
-- Row-level security is enabled for both tables in the SQL setup. Listings are public; messages can only be read by their sender and recipient.
-- Users must be signed in to post or message. Supabase Auth email confirmation may be enabled in the project settings.
-- Do not use the Supabase service-role key in the browser. Review RLS policies before launching publicly, and consider adding moderation/reporting and rate limits.
-- The inbox in this starter shows individual messages; it is not a realtime chat yet. Realtime can be enabled for the messages table later.
+Serve the directory over HTTP (ES modules do not work reliably from `file://`): `python -m http.server 8000`, then open `http://localhost:8000`.
