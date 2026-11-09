@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#10131e">
   <title>Blook Trade Board</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="blook-picker.css?v=gallery-grid-5">
+  <link rel="stylesheet" href="blook-picker.css?v=compact-gallery-6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="blook-picker.js?v=gallery-grid-5" defer></script>
+  <script src="blook-picker.js?v=compact-gallery-6" defer></script>
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -38,7 +38,7 @@
     <p id="listing-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Publish listing</button>
   </form></dialog>
 
-  <dialog id="blook-picker-dialog" class="dialog blook-picker-dialog"><div class="dialog-card picker-card"><button type="button" class="dialog-x" data-picker-close aria-label="Close">×</button><p class="eyebrow">BLOOK COLLECTION</p><h2>Select Blooks</h2><p class="muted">Search Blooks by name and select the ones you want to trade.</p><input id="blook-picker-search" type="search" placeholder="Search Blooks" aria-label="Search Blooks"><div id="blook-picker-grid" class="blook-picker-grid"></div><p id="blook-picker-empty" class="muted hidden">No Blooks match your search.</p><div class="picker-footer"><span id="blook-picker-count" class="muted">Loading Blooks…</span><button id="blook-picker-done" class="button button-primary" type="button">Use selection</button></div></div></dialog>
+  <dialog id="blook-picker-dialog" class="dialog blook-picker-dialog"><div class="dialog-card picker-card"><button type="button" class="dialog-x" data-picker-close aria-label="Close">×</button><p class="eyebrow">BLOOK COLLECTION</p><h2>Select Blooks</h2><p class="muted">Search Blooks by name to select the ones you want to trade.</p><input id="blook-picker-search" type="search" placeholder="Search Blooks" aria-label="Search Blooks"><div id="blook-picker-grid" class="blook-picker-grid"></div><p id="blook-picker-empty" class="muted hidden">No Blooks match your search.</p><div class="picker-footer"><span id="blook-picker-count" class="muted">Loading Blooks…</span><button id="blook-picker-done" class="button button-primary" type="button">Use selection</button></div></div></dialog>
 
   <dialog id="message-dialog" class="dialog"><form id="message-form" class="dialog-card"><button type="button" class="dialog-x" data-close aria-label="Close">×</button><p class="eyebrow">START A CONVERSATION</p><h2 id="message-heading">Message trader</h2><p class="muted">Discuss the trade here. Keep account passwords and private information to yourself.</p><label>Your message<textarea id="message-input" rows="5" maxlength="1000" required placeholder="Hi! I’m interested in your trade. Would you consider…"></textarea></label><p id="message-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Send message</button></form></dialog>
 
