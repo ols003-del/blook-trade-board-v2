@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131e">
+  <title>Blook Trade Board</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark">B</span><span><strong>Blook Trade</strong><small>Community marketplace</small></span></a>
+    <div class="account-area"><span id="account-label">Not signed in</span><button id="auth-open" class="button button-quiet">Sign in</button><button id="sign-out" class="button button-quiet hidden">Sign out</button></div>
+  </header>
+  <main class="shell">
+    <section class="hero"><div><p class="eyebrow">TRADE WITH THE COMMUNITY</p><h1>Find your next<br><span class="accent">great trade.</span></h1><p class="hero-copy">Browse offers, post the Blooks you have, and message traders to work out a deal.</p></div><div class="hero-art" aria-hidden="true"><span>✦</span><span>◆</span><span>✧</span><b>BLOOKS<br>WANTED</b></div></section>
+    <section class="controls"><div><h2>Trade listings</h2><p id="listing-count" class="muted">Loading listings…</p></div><div class="control-actions"><input id="search" type="search" placeholder="Search Blooks or usernames" aria-label="Search listings"><button id="post-open" class="button button-primary">＋ Post a trade</button></div></section>
+    <div id="notice" class="notice hidden" role="status"></div>
+    <section id="listings" class="listing-grid" aria-live="polite"></section>
+    <section id="empty-state" class="empty-state hidden"><div class="empty-icon">✧</div><h3>No trades found</h3><p>Try a different search, or be the first to post a trade.</p></section>
+    <footer>Unofficial fan-made community project. Never share your Blacket password or account credentials.</footer>
+  </main>
+
+  <dialog id="auth-dialog" class="dialog"><form id="auth-form" class="dialog-card"><button type="button" class="dialog-x" data-close aria-label="Close">×</button><p class="eyebrow">WELCOME TO THE BOARD</p><h2 id="auth-heading">Sign in</h2><p class="muted">Create an account to post listings and message other traders.</p><label>Email<input id="auth-email" type="email" autocomplete="email" required maxlength="254"></label><label>Password<input id="auth-password" type="password" autocomplete="current-password" required minlength="6" maxlength="128"></label><label id="display-name-wrap" class="hidden">Display name<input id="display-name" maxlength="30" autocomplete="nickname"></label><p id="auth-error" class="form-error" role="alert"></p><button id="auth-submit" class="button button-primary button-wide" type="submit">Sign in</button><button id="auth-switch" class="text-button" type="button">Need an account? Sign up</button></form></dialog>
+
+  <dialog id="listing-dialog" class="dialog"><form id="listing-form" class="dialog-card"><button type="button" class="dialog-x" data-close aria-label="Close">×</button><p class="eyebrow">MAKE A TRADE</p><h2>Post a listing</h2><p class="muted">Add one Blook per line: <code>Name | quantity | image URL</code>. Image URL can be left blank.</p><label>Blacket username<input id="game-username" maxlength="30" required placeholder="Your in-game username"></label><label>What you’re offering<textarea id="offer-input" rows="4" required placeholder="Clark | 2 | https://example.com/clark.png"></textarea></label><label>What you want in return<textarea id="want-input" rows="4" required placeholder="Mary Kline | 1 | https://example.com/mary-kline.png"></textarea></label><label>Extra details <span class="muted">(optional)</span><textarea id="details-input" rows="2" maxlength="500" placeholder="Open to other offers…"></textarea></label><p id="listing-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Publish listing</button></form></dialog>
+
+  <dialog id="message-dialog" class="dialog"><form id="message-form" class="dialog-card"><button type="button" class="dialog-x" data-close aria-label="Close">×</button><p class="eyebrow">START A CONVERSATION</p><h2 id="message-heading">Message trader</h2><p class="muted">Discuss the trade here. Keep account passwords and private information to yourself.</p><label>Your message<textarea id="message-input" rows="5" maxlength="1000" required placeholder="Hi! I’m interested in your trade. Would you consider…"></textarea></label><p id="message-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Send message</button></form></dialog>
+
+  <dialog id="inbox-dialog" class="dialog"><div class="dialog-card inbox-card"><button type="button" class="dialog-x" data-close aria-label="Close">×</button><p class="eyebrow">YOUR TRADE CHATS</p><h2>Inbox</h2><div id="inbox-content" class="inbox-content"></div></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
