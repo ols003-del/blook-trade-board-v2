@@ -1,6 +1,5 @@
 (() => {
-  // Blooks come from the supplied image-path manifest. Tokens are a separate
-  // currency field on the listing form, not a Blook in the image gallery.
+  // Blooks come only from the supplied image-path manifest.
   const MANIFEST_URL = new URL('blook-image-paths.txt', document.baseURI);
   const IMAGE_ORIGIN = 'https://blacket.org';
   let catalog = [];
@@ -15,7 +14,7 @@
     const result = new Map();
     for (const line of text.split('\n')) {
       const [name = '', count = '1', image = ''] = line.split('|').map((part) => part.trim());
-      if (!name || /^tokens?$/i.test(name)) continue;
+      if (!name) continue;
       const item = catalog.find((entry) => entry.name.toLowerCase() === name.toLowerCase()
         && (!image || image === entry.path || image === imageUrl(entry.path)));
       const key = item?.path || `custom:${name.toLowerCase()}`;
@@ -23,7 +22,6 @@
     }
     return result;
   }
-
   function render() {
     const query = $('#blook-picker-search').value.trim().toLocaleLowerCase();
     const grid = $('#blook-picker-grid');
@@ -34,10 +32,8 @@
     const total = [...selected.values()].reduce((sum, item) => sum + item.quantity, 0);
     $('#blook-picker-count').textContent = `${matches.length} shown · ${selected.size} Blooks selected (${total} total)`;
   }
-
   function renderCard(item, grid) {
-    const key = item.path;
-    const choice = selected.get(key);
+    const choice = selected.get(item.path);
     const card = document.createElement('article');
     card.className = `blook-choice${choice ? ' selected' : ''}`;
     const imageFrame = document.createElement('div');
@@ -53,83 +49,32 @@
       imageFrame.textContent = 'Image unavailable';
     };
     imageFrame.append(image);
-
     const label = document.createElement('strong');
     label.className = 'blook-choice-name';
     label.textContent = item.name;
     const controls = document.createElement('div');
     controls.className = 'blook-quantity';
     const minus = document.createElement('button');
-    minus.type = 'button';
-    minus.textContent = '−';
-    minus.disabled = !choice;
+    minus.type = 'button'; minus.textContent = '−'; minus.disabled = !choice;
     minus.setAttribute('aria-label', `Remove one ${item.name}`);
     minus.addEventListener('click', () => adjust(item, -1));
     const amount = document.createElement('span');
     amount.textContent = String(choice?.quantity || 0);
     amount.setAttribute('aria-live', 'polite');
     const plus = document.createElement('button');
-    plus.type = 'button';
-    plus.textContent = '+';
+    plus.type = 'button'; plus.textContent = '+';
     plus.setAttribute('aria-label', `Add one ${item.name}`);
     plus.addEventListener('click', () => adjust(item, 1));
     controls.append(minus, amount, plus);
     card.append(imageFrame, label, controls);
     grid.append(card);
   }
-
   function adjust(item, delta) {
     const next = (selected.get(item.path)?.quantity || 0) + delta;
     if (next <= 0) selected.delete(item.path);
     else selected.set(item.path, { name: item.name, quantity: Math.min(9999, next), path: item.path });
     render();
   }
-
-  function addSeparateTokenInputs() {
-    for (const { id, label } of [
-      { id: 'offer-input', label: 'Tokens you offer' },
-      { id: 'want-input', label: 'Tokens you want' }
-    ]) {
-      const textarea = document.getElementById(id);
-      if (!textarea || document.getElementById(`${id}-tokens`)) continue;
-      const wrapper = document.createElement('label');
-      wrapper.className = 'token-amount-field';
-      wrapper.htmlFor = `${id}-tokens`;
-      wrapper.append(document.createTextNode(label));
-      const input = document.createElement('input');
-      input.id = `${id}-tokens`;
-      input.type = 'number';
-      input.min = '0';
-      input.max = '999999999';
-      input.step = '1';
-      input.value = '0';
-      input.inputMode = 'numeric';
-      input.setAttribute('aria-label', label);
-      input.dataset.tokenAmount = 'true';
-      wrapper.append(input);
-      textarea.after(wrapper);
-    }
-
-    // The existing listing submit handler reads the textareas. Add the separate
-    // token amount to its respective trade side just before that handler runs.
-    const form = $('#listing-form');
-    form?.addEventListener('submit', () => {
-      for (const id of ['offer-input', 'want-input']) {
-        const textarea = document.getElementById(id);
-        const tokenInput = document.getElementById(`${id}-tokens`);
-        if (!textarea || !tokenInput) continue;
-        const blookLines = textarea.value.split('\n').filter((line) => !/^\s*tokens?\s*\|/i.test(line));
-        const amount = Math.max(0, Math.min(999999999, parseInt(tokenInput.value, 10) || 0));
-        if (amount > 0) blookLines.push(`Tokens | ${amount}`);
-        textarea.value = blookLines.filter(Boolean).join('\n');
-      }
-    }, true);
-
-    $('#listing-form')?.addEventListener('reset', () => {
-      setTimeout(() => document.querySelectorAll('[data-token-amount]').forEach((input) => { input.value = '0'; }), 0);
-    });
-  }
-
   document.querySelectorAll('[data-pick-for]').forEach((button) => {
     button.addEventListener('click', () => {
       targetTextarea = document.getElementById(button.dataset.pickFor);
@@ -140,7 +85,6 @@
       $('#blook-picker-search').focus();
     });
   });
-
   $('#blook-picker-search').addEventListener('input', render);
   $('#blook-picker-done').addEventListener('click', () => {
     if (targetTextarea) {
@@ -155,8 +99,6 @@
   $('#blook-picker-dialog').addEventListener('click', (event) => {
     if (event.target === $('#blook-picker-dialog')) $('#blook-picker-dialog').close();
   });
-
-  addSeparateTokenInputs();
   fetch(MANIFEST_URL)
     .then((response) => {
       if (!response.ok) throw new Error(`Could not load Blook manifest (${response.status}).`);

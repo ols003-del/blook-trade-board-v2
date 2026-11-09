@@ -4,7 +4,6 @@ const url = window.SUPABASE_URL;
 const anonKey = window.SUPABASE_ANON_KEY;
 const configured = Boolean(url && anonKey);
 const supabase = configured ? createClient(url, anonKey) : null;
-
 const $ = (selector) => document.querySelector(selector);
 const listingsNode = $('#listings');
 let listings = [];
@@ -32,6 +31,12 @@ function normalizeItems(input) {
     return { name: name.slice(0, 60), quantity: Math.max(1, Math.min(9999, parseInt(quantity, 10) || 1)), image: image.slice(0, 500) };
   }).filter((item) => item.name);
 }
+function readTokenAmount(id) {
+  return Math.max(0, Math.min(999999999, parseInt($(id)?.value, 10) || 0));
+}
+function addTokens(items, amount) {
+  return amount > 0 ? [...items, { name: 'Tokens', quantity: amount, image: '' }] : items;
+}
 function safeImage(src) {
   if (!src) return '';
   try {
@@ -54,7 +59,7 @@ function makeItem(item) {
   } else {
     const placeholder = document.createElement('span');
     placeholder.className = 'blook-placeholder';
-    placeholder.textContent = '✦';
+    placeholder.textContent = item.name.toLowerCase() === 'tokens' ? '🪙' : '✦';
     chip.append(placeholder);
   }
   const label = document.createElement('span');
@@ -126,10 +131,7 @@ async function loadListings() {
     return;
   }
   const { data, error } = await supabase.from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(100);
-  if (error) {
-    showNotice(`Could not load listings: ${error.message}`);
-    return;
-  }
+  if (error) { showNotice(`Could not load listings: ${error.message}`); return; }
   listings = data || [];
   renderListings();
 }
@@ -139,8 +141,7 @@ async function updateAuth() {
   if (error) console.error('Could not read Supabase session:', error.message);
   $('#account-label').textContent = user ? getPublicUserName(user) : 'Not signed in';
   $('#auth-open').classList.toggle('hidden', Boolean(user));
-  const mainSignup = $('#main-signup');
-  if (mainSignup) mainSignup.classList.toggle('hidden', Boolean(user));
+  $('#main-signup').classList.toggle('hidden', Boolean(user));
   $('#sign-out').classList.toggle('hidden', !user);
   let inboxButton = $('#inbox-open');
   if (user && !inboxButton) {
@@ -154,20 +155,14 @@ async function updateAuth() {
 }
 async function signInWithDiscord(event) {
   event?.preventDefault();
-  if (!configured) {
-    showNotice('Discord sign-in is unavailable: Supabase URL or publishable key is missing in config.js.');
-    return;
-  }
+  if (!configured) { showNotice('Discord sign-in is unavailable: Supabase URL or publishable key is missing in config.js.'); return; }
   const button = event?.currentTarget;
   if (button) button.disabled = true;
   const errorNode = $('#auth-error');
   if (errorNode) errorNode.textContent = '';
   try {
     const redirectTo = new URL(window.location.pathname, window.location.origin).toString();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: { redirectTo, scopes: 'identify' }
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo, scopes: 'identify' } });
     if (error) throw error;
   } catch (error) {
     const message = error.message || 'Could not start Discord sign-in.';
@@ -198,9 +193,9 @@ $('#listing-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) { $('#listing-error').textContent = 'Sign in with Discord first.'; return; }
-  const offers = normalizeItems($('#offer-input').value);
-  const wants = normalizeItems($('#want-input').value);
-  if (!offers.length || !wants.length) { $('#listing-error').textContent = 'Add at least one Blook to both fields.'; return; }
+  const offers = addTokens(normalizeItems($('#offer-input').value), readTokenAmount('#offer-tokens'));
+  const wants = addTokens(normalizeItems($('#want-input').value), readTokenAmount('#want-tokens'));
+  if (!offers.length || !wants.length) { $('#listing-error').textContent = 'Choose at least one Blook or enter a token amount on both sides of the trade.'; return; }
   const submit = event.submitter;
   submit.disabled = true;
   const { error } = await supabase.from('listings').insert({ owner_id: user.id, game_username: $('#game-username').value.trim(), offers, wants, details: $('#details-input').value.trim() });
@@ -259,9 +254,7 @@ document.querySelectorAll('[data-close]').forEach((button) => button.addEventLis
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
 if (configured) {
   supabase.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-      setTimeout(() => { updateAuth(); loadListings(); }, 0);
-    }
+    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => { updateAuth(); loadListings(); }, 0);
   });
   updateAuth();
 }
