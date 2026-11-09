@@ -9,8 +9,7 @@
 
   function imageUrl(path) {
     if (!path) return '';
-    // URL handles spaces and query strings in manifest paths without changing
-    // the path/name from the manifest.
+    // URL encodes spaces while retaining any existing query string (for example ?1).
     return new URL(path, IMAGE_ORIGIN).href;
   }
 
@@ -54,12 +53,15 @@
     image.alt = item.name;
     image.loading = 'lazy';
     image.decoding = 'async';
-    image.onerror = () => {
-      image.remove();
-      imageFrame.classList.add('image-fallback');
-      imageFrame.textContent = 'Image unavailable';
-      imageFrame.setAttribute('aria-label', `Image unavailable for ${item.name}`);
-    };
+    image.addEventListener('error', () => {
+      if (imageFrame.querySelector('.image-fallback-label')) return;
+      const fallback = document.createElement('span');
+      fallback.className = 'image-fallback-label';
+      fallback.textContent = 'Image unavailable';
+      fallback.setAttribute('aria-label', `Image unavailable for ${item.name}`);
+      imageFrame.append(fallback);
+      image.hidden = true;
+    }, { once: true });
     imageFrame.append(image);
 
     const label = document.createElement('strong');
@@ -139,7 +141,13 @@
         .filter((path) => path.startsWith('/content/blooks/'))
         .map((path) => {
           const filename = path.slice(path.lastIndexOf('/') + 1).split('?')[0];
-          return { name: decodeURIComponent(filename.replace(/\.(png|webp|gif)$/i, '')), path };
+          let name;
+          try {
+            name = decodeURIComponent(filename.replace(/\.(png|webp|gif)$/i, ''));
+          } catch {
+            name = filename.replace(/\.(png|webp|gif)$/i, '');
+          }
+          return { name, path };
         });
       render();
     })
