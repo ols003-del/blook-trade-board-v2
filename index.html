@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#10131e">
   <title>Blook Trade Board</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="blook-picker.css?v=picker-grid-2">
+  <link rel="stylesheet" href="blook-picker.css?v=gallery-grid-3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="blook-picker.js?v=picker-grid-2" defer></script>
+  <script src="blook-picker.js?v=gallery-grid-3" defer></script>
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -34,7 +34,8 @@
     <label class="token-amount-field" for="offer-tokens">Tokens you’re offering<input id="offer-tokens" type="number" min="0" max="999999999" step="1" value="0" inputmode="numeric"></label>
     <label for="want-input">What you want in return</label><button class="button button-outline picker-open" type="button" data-pick-for="want-input">Choose Blooks you want</button><textarea id="want-input" rows="3" placeholder="Selected Blooks appear here"></textarea>
     <label class="token-amount-field" for="want-tokens">Tokens you want<input id="want-tokens" type="number" min="0" max="999999999" step="1" value="0" inputmode="numeric"></label>
-    <label>Extra details <span class="muted">(optional)</span><textarea id="details-input" rows="2" maxlength="500" placeholder="Open to other offers…"></textarea></label><p id="listing-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Publish listing</button>
+    <label>Extra details <span class="muted">(optional)</span><textarea id="details-input" rows="2" maxlength="500" placeholder="Open to other offers…"></textarea></label>
+    <p id="listing-error" class="form-error" role="alert"></p><button class="button button-primary button-wide" type="submit">Publish listing</button>
   </form></dialog>
 
   <dialog id="blook-picker-dialog" class="dialog blook-picker-dialog"><div class="dialog-card picker-card"><button type="button" class="dialog-x" data-picker-close aria-label="Close">×</button><p class="eyebrow">BLOOK COLLECTION</p><h2>Select Blooks</h2><p class="muted">Search, then click a Blook to select it or use − and + to change quantity.</p><input id="blook-picker-search" type="search" placeholder="Search Blooks" aria-label="Search Blooks"><div id="blook-picker-grid" class="blook-picker-grid"></div><p id="blook-picker-empty" class="muted hidden">No Blooks match your search.</p><div class="picker-footer"><span id="blook-picker-count" class="muted">Loading Blooks…</span><button id="blook-picker-done" class="button button-primary" type="button">Use selection</button></div></div></dialog>
