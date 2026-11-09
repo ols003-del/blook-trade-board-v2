@@ -10,7 +10,6 @@
   function imageUrl(path) {
     return path ? new URL(path, IMAGE_ORIGIN).href : '';
   }
-
   function readExisting(text) {
     const result = new Map();
     for (const line of text.split('\n')) {
@@ -23,7 +22,6 @@
     }
     return result;
   }
-
   function render() {
     const query = $('#blook-picker-search').value.trim().toLocaleLowerCase();
     const grid = $('#blook-picker-grid');
@@ -34,7 +32,6 @@
     const total = [...selected.values()].reduce((sum, item) => sum + item.quantity, 0);
     $('#blook-picker-count').textContent = `${matches.length} shown · ${selected.size} Blooks selected (${total} total)`;
   }
-
   function renderCard(item, grid) {
     const choice = selected.get(item.path);
     const card = document.createElement('article');
@@ -63,30 +60,16 @@
     label.textContent = item.name;
     const controls = document.createElement('div');
     controls.className = 'blook-quantity';
-
     const minus = document.createElement('button');
-    minus.type = 'button';
-    minus.textContent = '−';
-    minus.disabled = !choice;
+    minus.type = 'button'; minus.textContent = '−'; minus.disabled = !choice;
     minus.setAttribute('aria-label', `Remove one ${item.name}`);
-    minus.addEventListener('click', (event) => {
-      event.stopPropagation();
-      adjust(item, -1);
-    });
-
+    minus.addEventListener('click', (event) => { event.stopPropagation(); adjust(item, -1); });
     const amount = document.createElement('span');
     amount.textContent = String(choice?.quantity || 0);
-    amount.setAttribute('aria-live', 'polite');
-
     const plus = document.createElement('button');
-    plus.type = 'button';
-    plus.textContent = '+';
+    plus.type = 'button'; plus.textContent = '+';
     plus.setAttribute('aria-label', `Add one ${item.name}`);
-    plus.addEventListener('click', (event) => {
-      event.stopPropagation();
-      adjust(item, 1);
-    });
-
+    plus.addEventListener('click', (event) => { event.stopPropagation(); adjust(item, 1); });
     controls.append(minus, amount, plus);
     card.append(imageFrame, label, controls);
     card.addEventListener('click', () => toggle(item));
@@ -97,20 +80,17 @@
     });
     grid.append(card);
   }
-
   function toggle(item) {
     if (selected.has(item.path)) selected.delete(item.path);
     else selected.set(item.path, { name: item.name, quantity: 1, path: item.path });
     render();
   }
-
   function adjust(item, delta) {
     const next = (selected.get(item.path)?.quantity || 0) + delta;
     if (next <= 0) selected.delete(item.path);
     else selected.set(item.path, { name: item.name, quantity: Math.min(9999, next), path: item.path });
     render();
   }
-
   document.querySelectorAll('[data-pick-for]').forEach((button) => {
     button.addEventListener('click', () => {
       targetTextarea = document.getElementById(button.dataset.pickFor);
@@ -121,7 +101,6 @@
       $('#blook-picker-search').focus();
     });
   });
-
   $('#blook-picker-search').addEventListener('input', render);
   $('#blook-picker-done').addEventListener('click', () => {
     if (targetTextarea) {
