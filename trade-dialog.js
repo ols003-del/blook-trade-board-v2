@@ -3,16 +3,17 @@
   const username = document.getElementById('game-username');
   if (!dialog || !username) return;
 
-  // app.js currently fills this field from the Discord profile before opening.
-  // Wrap only this dialog's showModal so the in-game username always starts blank.
-  const showListingDialog = dialog.showModal.bind(dialog);
+  // app.js sets the username from the Discord profile immediately before
+  // opening the dialog. Clear it after the native dialog opens so it always
+  // starts empty and the user must enter their in-game username themselves.
+  const nativeShowModal = dialog.showModal.bind(dialog);
   dialog.showModal = (...args) => {
+    const result = nativeShowModal(...args);
     username.value = '';
-    return showListingDialog(...args);
+    return result;
   };
 
-  // The generic dialog backdrop handler in app.js closes dialogs on clicks.
-  // Stop clicks on the listing dialog backdrop before they reach that handler.
+  // Prevent backdrop clicks from reaching the generic close handler in app.js.
   document.addEventListener('click', (event) => {
     if (event.target === dialog) {
       event.preventDefault();
